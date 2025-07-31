@@ -47,6 +47,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column]
+    private ?bool $isValidated = false;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -184,6 +187,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of isValidated
+     */ 
+    public function getIsValidated(): bool|null
+    {
+        return $this->isValidated;
+    }
+
+    /**
+     * Set the value of isValidated
+     *
+     * @return  self
+     */ 
+    public function setIsValidated(?bool $isValidated): static
+    {
+        $this->isValidated = $isValidated;
 
         return $this;
     }
