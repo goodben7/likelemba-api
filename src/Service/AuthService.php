@@ -40,11 +40,14 @@ class AuthService
         if (!$session) return null;
 
         $session->setIsValidated(true);
-        $user = $this->userRepo->findOneBy(['phoneNumber' => $phone]);
+        $user = $this->userRepo->findOneBy(['phone' => $phone]);
 
         if (!$user) {
             $user = new User();
             $user->setPhone($phone);
+            $user->setUsername($phone); // Utiliser le numéro de téléphone comme nom d'utilisateur par défaut
+            $user->setPassword(null); // Définir le mot de passe à null pour les utilisateurs authentifiés par OTP
+            $user->setDeleted(false);
             $user->setIsValidated(true);
             $user->setCreatedAt(new \DateTimeImmutable());
             $this->em->persist($user);
@@ -52,5 +55,17 @@ class AuthService
 
         $this->em->flush();
         return $user;
+    }
+    
+    /**
+     * Get the latest OTP session for a phone number
+     * Used for testing purposes
+     */
+    public function getLatestSession(string $phone): ?AuthSession
+    {
+        return $this->authSessionRepo->findOneBy(
+            ['phone' => $phone, 'isValidated' => false],
+            ['createdAt' => 'DESC']
+        );
     }
 }

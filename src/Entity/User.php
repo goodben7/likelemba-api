@@ -2,22 +2,55 @@
 
 namespace App\Entity;
 
-use App\Repository\UserRepository;
+use App\State\MeProvider;
+use ApiPlatform\Metadata\Get;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use App\Repository\UserRepository;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Doctrine\Orm\State\ItemProvider;
+use Symfony\Component\Serializer\Annotation\Groups;
+use ApiPlatform\Doctrine\Orm\State\CollectionProvider;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_PHONE', fields: ['phone'])]
+#[Get(
+    uriTemplate: 'users/about',
+    normalizationContext: ['groups' => 'user:get'],
+    security: 'is_granted("ROLE_USER")',
+    provider: MeProvider::class,
+    name: 'Get current user information',
+    description: 'Retrieves the authenticated user information',
+    stateless: false
+)]
+#[ApiResource(
+    operations: [
+        new Get(
+            security: 'is_granted("ROLE_USER")',
+            provider: ItemProvider::class,
+            stateless: false
+        ),
+        new GetCollection(
+            security: 'is_granted("ROLE_USER_LIST")',
+            provider: CollectionProvider::class,
+            stateless: false
+        )
+    ],
+    normalizationContext: ['groups' => 'user:get']
+)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(groups: ['user:get'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Groups(groups: ['user:get'])]
     private ?string $username = null;
 
     /**
@@ -27,27 +60,33 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private array $roles = [];
 
     /**
-     * @var string The hashed password
+     * @var string|null The hashed password
      */
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?string $password = null;
 
     #[ORM\Column(length: 15, nullable: true)]
+    #[Groups(groups: ['user:get'])]
     private ?string $phone = null;
 
     #[ORM\Column(length: 120, nullable: true)]
+    #[Groups(groups: ['user:get'])]
     private ?string $displayName = null;
 
     #[ORM\Column]
+    #[Groups(groups: ['user:get'])]
     private ?bool $deleted = null;
 
     #[ORM\Column]
+    #[Groups(groups: ['user:get'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(groups: ['user:get'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column]
+    #[Groups(groups: ['user:get'])]
     private ?bool $isValidated = false;
 
     public function getId(): ?int
@@ -107,7 +146,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->password;
     }
 
-    public function setPassword(string $password): static
+    public function setPassword(?string $password): static
     {
         $this->password = $password;
 
@@ -120,7 +159,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __serialize(): array
     {
         $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+        $data["\0".self::class."\0password"] = $this->password ? hash('crc32c', $this->password) : null;
 
         return $data;
     }
