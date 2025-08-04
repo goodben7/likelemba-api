@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Post;
 use App\ApiResource\Dto\OtpRequest;
 use App\State\SendOtpProcessor;
 use App\State\VerifyOtpProcessor;
+use App\State\LogoutProcessor;
 
 #[ApiResource(
     shortName: 'Auth',
@@ -24,6 +25,14 @@ use App\State\VerifyOtpProcessor;
             processor: VerifyOtpProcessor::class,
             name: 'Verify OTP code',
             description: 'Verifies the OTP code sent to the phone number',
+            stateless: false
+        ),
+        new Post(
+            uriTemplate: '/auth/logout',
+            processor: LogoutProcessor::class,
+            name: 'Logout',
+            description: 'Logs out the current user',
+            security: 'is_granted("ROLE_USER")',
             stateless: false
         ),
     ]

@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\State\MeProvider;
 use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Patch;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
 use ApiPlatform\Metadata\ApiResource;
@@ -11,12 +12,14 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Doctrine\Orm\State\ItemProvider;
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Doctrine\Orm\State\CollectionProvider;
+use ApiPlatform\Doctrine\Common\State\PersistProcessor;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_PHONE', fields: ['phone'])]
+#[ORM\HasLifecycleCallbacks]
 #[Get(
     uriTemplate: 'users/about',
     normalizationContext: ['groups' => 'user:get'],
@@ -37,7 +40,13 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
             security: 'is_granted("ROLE_USER_LIST")',
             provider: CollectionProvider::class,
             stateless: false
-        )
+        ),
+        new Patch(
+            security: 'is_granted("ROLE_USER")',
+            denormalizationContext: ['groups' => 'user:patch'],
+            processor: PersistProcessor::class,
+            stateless: false
+        ),
     ],
     normalizationContext: ['groups' => 'user:get']
 )]
@@ -70,7 +79,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phone = null;
 
     #[ORM\Column(length: 120, nullable: true)]
-    #[Groups(groups: ['user:get'])]
+    #[Groups(groups: ['user:get', 'user:patch'])]
     private ?string $displayName = null;
 
     #[ORM\Column]
@@ -248,5 +257,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->isValidated = $isValidated;
 
         return $this;
+    }
+
+    #[ORM\PreUpdate]
+    public function updateUpdatedAt(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 }
