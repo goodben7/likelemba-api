@@ -51,6 +51,10 @@ class AuthService
             $user->setIsValidated(true);
             $user->setCreatedAt(new \DateTimeImmutable());
             $this->em->persist($user);
+        } elseif ($user->isDeleted()) {
+            // Si l'utilisateur est marqué comme supprimé, on déclenche une exception
+            $this->em->flush(); // Sauvegarde la session comme validée
+            throw new \App\Exception\UserAuthenticationException('This user is not active. Please contact support.');
         }
 
         $this->em->flush();

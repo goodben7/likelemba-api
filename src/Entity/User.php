@@ -5,11 +5,15 @@ namespace App\Entity;
 use App\State\MeProvider;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
+use App\State\DeleteUserProcessor;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Doctrine\Orm\State\ItemProvider;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
 use ApiPlatform\Doctrine\Orm\State\CollectionProvider;
 use ApiPlatform\Doctrine\Common\State\PersistProcessor;
@@ -47,9 +51,21 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
             processor: PersistProcessor::class,
             stateless: false
         ),
+        new Delete(
+            security: 'is_granted("ROLE_USER")',
+            processor: DeleteUserProcessor::class,
+            stateless: false
+        ),
     ],
     normalizationContext: ['groups' => 'user:get']
 )]
+#[ApiFilter(SearchFilter::class, properties: [
+    'id' => 'exact',
+    'roles' => 'exact',
+    'phone' => 'exact',
+    'displayName' => 'ipartial',
+    'deleted' => 'exact'
+])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
